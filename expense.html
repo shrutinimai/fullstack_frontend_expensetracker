@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Expense Tracker</title>
     <link rel="stylesheet" href="expense.css">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="auth-check.js"></script>
+
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
 
@@ -30,10 +33,58 @@
     </form>
 
     <h3>Expenses:</h3>
+
+    <div id="premiumStatus" style="margin-bottom: 10px; font-weight: bold; color: green;"></div>
+
     <ul id="expensesList"></ul>
 </div>
 
+<button id="buyPremiumBtn" style="position: absolute; right: 20px; top: 20px;">
+    Buy Premium Membership 
+</button>
+
+<!-- Payment message -->
+<div id="paymentMessage" style="display: none; padding: 10px; margin-top: 10px;"></div>
+
 <script src="script.js"></script>
+<script src="payment.js"></script>
+
+<script>
+    // Add this at the end of your body, after the existing <script> tags
+    
+    window.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get("order_id");
+    
+        if (orderId) {
+            try {
+                const token = localStorage.getItem("token");
+    
+                const response = await fetch(`http://localhost:4200/order/success?order_id=${orderId}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': token }
+                });
+    
+                if (response.ok) {
+                    console.log("✅ Premium activated.");
+                    // Optionally: Reload user status if needed
+
+                    const msgDiv = document.getElementById("paymentMessage");
+                    msgDiv.textContent = "🎉 Payment successful! Premium Activated.";
+                    msgDiv.style.display = "block";
+                    msgDiv.style.color = "green";
+
+                    fetchExpenses();  // Reload the expenses to reflect the premium status change
+                }
+            } catch (err) {
+                console.error("Error confirming payment:", err);
+            }
+        }
+    
+        fetchExpenses(); // Existing function to load the expenses list
+    });
+    
+    </script>
 
 </body>
 </html>
