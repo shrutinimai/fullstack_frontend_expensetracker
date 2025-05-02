@@ -3,25 +3,29 @@ const loginForm = document.getElementById("loginForm");
 
 if (signupForm) {
     signupForm.addEventListener("submit", async function (event) {
+
+
         event.preventDefault();
+ 
+         const name = document.getElementById("name").value.trim();
+         const email = document.getElementById("email").value.trim();
+         const password = document.getElementById("password").value.trim();
+ 
+         if (!name || !email || !password) {
+             alert("All fields are mandatory!");
+             return;
+         }
 
-        const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value.trim();
-
-        if (!name || !email || !password) {
-            alert("All fields are mandatory!");
-            return;
-        }
-
-        try {
+         try {
             await axios.post("http://localhost:4200/user/signup", {
+
                 name, email, password
-            });
+             });
+ 
+        
 
-            alert("Signup successful!");
-            signupForm.reset();
-
+             alert("Signup successful!");
+             signupForm.reset();
             showLogin();
 
         } catch (error) {
@@ -33,37 +37,41 @@ if (signupForm) {
 
 if (loginForm) {
     loginForm.addEventListener("submit", async function (event) {
+
         event.preventDefault();
 
+
         const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value.trim();
+         const password = document.getElementById("loginPassword").value.trim();
+ 
+         if (!email || !password) {
+             alert("All fields are mandatory!");
+             return;
+         }
+         try {
 
-        if (!email || !password) {
-            alert("All fields are mandatory!");
-            return;
-        }
-
-        try {
             const response = await axios.post("http://localhost:4200/user/login", {
                 email, password
             });
-
             const { token, refreshToken, externalCustomerId } = response.data;
 
-            localStorage.setItem("token", token);
-            localStorage.setItem("refreshToken", refreshToken);
-            localStorage.setItem("externalCustomerId", externalCustomerId);
-        
-        
-            alert("Login successful!");
-            window.location.href = "expense.html";
 
-        } catch (error) {
-            console.error("Login error:", error);
-            alert("Invalid credentials!");
-        }
-    });
-}
+            localStorage.setItem("token", token);
+             localStorage.setItem("refreshToken", refreshToken);
+             localStorage.setItem("externalCustomerId", externalCustomerId);
+             alert("Login successful!");
+
+             window.location.href = "expense.html";
+           
+
+            
+
+            } catch (error) {
+                console.error("Login error:", error);
+                alert("Invalid credentials!");
+            }
+        });
+    }
 
 const expenseForm = document.getElementById("expenseForm");
 
@@ -103,75 +111,120 @@ if (expenseForm) {
             alert("Failed to add expense!");
         }
     });
-
-    window.addEventListener('DOMContentLoaded', fetchExpenses);
 }
-
-async function fetchExpenses() {
-    try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            alert("You are not authorized. Please login.");
-            window.location.href = "login.html";  
-
-            return;
-        }
-
-        const response = await axios.get("http://localhost:4200/expense", {
-            headers: { Authorization:` Bearer ${token}` }
-        });
-
-        const expenses = response.data.expenses || response.data;
-        const isPremium = response.data.isPremiumUser;
-
-        const statusDiv = document.getElementById("premiumStatus");
-        const premiumBtn = document.getElementById("buyPremiumBtn");
-        const msgDiv = document.getElementById("paymentMessage");
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const orderIdFromRedirect = urlParams.get("order_id");
-
-        if (isPremium === "YES") {
-            if (statusDiv) statusDiv.textContent = "You are a Premium User ✅";
-
-            if (premiumBtn) premiumBtn.style.display = "none";
+   // window.addEventListener('DOMContentLoaded', fetchExpenses);
 
 
-            //const urlParams = new URLSearchParams(window.location.search);
-        //const orderIdFromRedirect = urlParams.get("order_id");
 
 
-            if (msgDiv && orderIdFromRedirect) {
-                msgDiv.textContent = "🎉 Payment successful! Premium Activated.";
-                msgDiv.style.display = "block";
-                msgDiv.style.color = "green";
+
+    async function fetchExpenses() {
+        let token = localStorage.getItem("token");
+        const refreshToken = localStorage.getItem("refreshToken");
+    
+        const fetchWithToken = async (bearerToken) => {
+            const response = await axios.get("http://localhost:4200/expense", {
+                headers: { Authorization: `Bearer ${bearerToken}` }
+            });
+            return response;
+        };
+    
+        try {
+            const response = await fetchWithToken(token);
+    
+            const expenses = response.data.expenses || response.data;
+            const isPremium = response.data.isPremiumUser;
+    
+            const statusDiv = document.getElementById("premiumStatus");
+            const premiumBtn = document.getElementById("buyPremiumBtn");
+            const msgDiv = document.getElementById("paymentMessage");
+    
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderIdFromRedirect = urlParams.get("order_id");
+    
+            if (isPremium === "YES") {
+                if (statusDiv) statusDiv.textContent = "You are a Premium User ";
+                if (premiumBtn) premiumBtn.style.display = "none";
+
+                document.getElementById("premium-banner").innerText = "🎉 You are a premium user now";
+                document.getElementById("premium-banner").style.display = "block";
+                document.getElementById("leaderboard-btn").style.display = "inline-block";
+            
+
+                document.getElementById("leaderboard-btn").addEventListener("click", async () => {
+                    try {
+                        const res = await axios.get("http://localhost:4200/user/leaderboard", {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+            
+                        const leaderboardList = document.getElementById("leaderboard-list");
+                        leaderboardList.innerHTML = "<h3>Leaderboard</h3><ul>";
+            
+                        res.data.forEach(user => {
+                            leaderboardList.innerHTML += `<li>${user.name} - ₹${user.total_expenses}</li>`;
+                        });
+            
+                        leaderboardList.innerHTML += "</ul>";
+            
+                    } catch (err) {
+                        console.error("Error fetching leaderboard:", err);
+                        alert("Unable to load leaderboard.");
+                    }
+                });
+            
+
+                if (msgDiv && orderIdFromRedirect) {
+                    msgDiv.textContent = "!!! Payment successful! Premium Activated.";
+                    msgDiv.style.display = "block";
+                    msgDiv.style.color = "green";
+                }
+            } else {
+                if (statusDiv) statusDiv.textContent = "";
+                if (premiumBtn) premiumBtn.style.display = "inline-block";
             }
-
-        } else {
-            if (statusDiv) statusDiv.textContent = "";
-            if (premiumBtn) premiumBtn.style.display = "inline-block";
+    
+            const expensesList = document.getElementById("expensesList");
+            expensesList.innerHTML = "";
+    
+            expenses.forEach(expense => {
+                const li = document.createElement("li");
+                li.textContent = `${expense.money} - ${expense.category} - ${expense.description}`;
+    
+                const deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "Delete";
+                deleteBtn.onclick = () => deleteExpense(expense.id);
+                deleteBtn.style.marginLeft = "10px";
+    
+                li.appendChild(deleteBtn);
+                expensesList.appendChild(li);
+            });
+    
+        } catch (error) {
+            if (error.response && error.response.status === 401 && refreshToken) {
+                // Attempt token refresh
+                try {
+                    const refreshResponse = await axios.post("http://localhost:4200/user/refresh", {
+                        refreshToken
+                    });
+    
+                    const newToken = refreshResponse.data.token;
+                    localStorage.setItem("token", newToken);
+    
+                    await fetchExpenses(); 
+    
+                } catch (refreshError) {
+                    console.error("Token refresh failed:", refreshError);
+                    alert("Session expired. Please login again.");
+                    localStorage.clear();
+                    window.location.href = "login.html";
+                }
+            } else {
+                console.error("Error fetching expenses:", error);
+                alert("Failed to fetch expenses. Please try again.");
+            }
         }
-
-        const expensesList = document.getElementById("expensesList");
-        expensesList.innerHTML = "";
-
-        expenses.forEach(expense => {
-            const li = document.createElement("li");
-            li.textContent = `${expense.money} - ${expense.category} - ${expense.description}`;
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "Delete";
-            deleteBtn.onclick = () => deleteExpense(expense.id);
-            deleteBtn.style.marginLeft = "10px";
-
-            li.appendChild(deleteBtn);
-            expensesList.appendChild(li);
-        });
-
-    } catch (error) {
-        console.error("Error fetching expenses:", error);
     }
-}
+    
 
 
 async function deleteExpense(id) {
@@ -194,6 +247,8 @@ async function deleteExpense(id) {
         console.error("Error deleting expense:", error);
     }
 }
+
+
 
 function showLogin() {
     const loginSection = document.getElementById("login");

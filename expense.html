@@ -37,20 +37,24 @@
     <div id="premiumStatus" style="margin-bottom: 10px; font-weight: bold; color: green;"></div>
 
     <ul id="expensesList"></ul>
+    
+<h2 id="premium-banner" style="display:none; color:green;"></h2>
+
+
 </div>
+<button id="leaderboard-btn" style="display:none;">Show Leaderboard</button>
+<div id="leaderboard-list"></div>
 
 <button id="buyPremiumBtn" style="position: absolute; right: 20px; top: 20px;">
     Buy Premium Membership 
 </button>
 
-<!-- Payment message -->
 <div id="paymentMessage" style="display: none; padding: 10px; margin-top: 10px;"></div>
 
 <script src="script.js"></script>
 <script src="payment.js"></script>
 
 <script>
-    // Add this at the end of your body, after the existing <script> tags
     
     window.addEventListener('DOMContentLoaded', async () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -66,22 +70,21 @@
                 });
     
                 if (response.ok) {
-                    console.log("✅ Premium activated.");
-                    // Optionally: Reload user status if needed
+                    console.log("Premium activated.");
 
                     const msgDiv = document.getElementById("paymentMessage");
-                    msgDiv.textContent = "🎉 Payment successful! Premium Activated.";
+                    msgDiv.textContent = " Payment successful! Premium Activated!.";
                     msgDiv.style.display = "block";
                     msgDiv.style.color = "green";
 
-                    fetchExpenses();  // Reload the expenses to reflect the premium status change
+                    fetchExpenses();  
                 }
             } catch (err) {
                 console.error("Error confirming payment:", err);
             }
         }
     
-        fetchExpenses(); // Existing function to load the expenses list
+        await fetchExpenses(); // Only called here, not in script.js anymore
     });
     
     </script>

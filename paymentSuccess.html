@@ -1,51 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Payment Successful</title>
-</head>
-<body>
-    <h1>🎉 Payment Successful!</h1>
-    <p>Your premium membership is now activated!</p>
-    <p id="premiumStatus">Loading your status...</p>
-    <a href="expense.html">Go to Dashboard</a>
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <title>Payment Successful</title>
+ </head>
+ <body>
+     <h1>🎉 Payment Successful!</h1>
+     <p>Your premium membership is now activated!</p>
+     <p id="premiumStatus">Loading your status...</p>
+     <button id="leaderboardBtn" style="display: none;">View Leaderboard</button>
+    <div id="leaderboard" style="display: none;">
+        <h3>Leaderboard</h3>
+        <ul id="leaderboardList"></ul>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script>
-        // Inside the DOMContentLoaded listener in paymentSuccess.html
-document.addEventListener('DOMContentLoaded', async function () {
-    const token = localStorage.getItem("token");
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderId = urlParams.get("order_id");
+     <a href="expense.html">Go to Dashboard</a>
+ 
+     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+     <script>
+         // Inside the DOMContentLoaded listener in paymentSuccess.html
+ document.addEventListener('DOMContentLoaded', async function () {
 
-    if (!token || !orderId) {
-        alert("Missing token or order ID. Please login again.");
-        window.location.href = "login.html";
-        return;
-    }
+     const token = localStorage.getItem("token");
+     const urlParams = new URLSearchParams(window.location.search);
+     const orderId = urlParams.get("order_id");
+ 
+     if (!token || !orderId) {
+         alert("Missing token or order ID. Please login again.");
+         window.location.href = "login.html";
+         return;
+     }
+ 
+     try {
+         const updateRes = await axios.post("http://localhost:4200/api/order/update", {
+             orderId
+         }, {
+             headers: { Authorization: `Bearer ${token}` }
+         });
+ 
+         if (updateRes.status === 200) {
 
-    try {
-        const updateRes = await axios.post("http://localhost:4200/api/order/update", {
-            orderId
-        }, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+             localStorage.setItem("isPremium", "YES"); 
+ 
+             //document.getElementById("buyPremiumBtn").style.display = "none";
+             document.getElementById("premiumStatus").innerText = "You are now a premium user! 🎉";
+             document.getElementById("leaderboardBtn").style.display = "block"; // Show the leaderboard button
 
-        if (updateRes.status === 200) {
-            // Mark user as premium in the frontend
-            localStorage.setItem("isPremium", "YES"); // Save this status
+             document.getElementById("leaderboardBtn").addEventListener("click", showLeaderboard);
 
-            // Hide the 'Buy Premium Membership' button
-            //document.getElementById("buyPremiumBtn").style.display = "none";
-            document.getElementById("premiumStatus").innerText = "You are now a premium user! 🎉";
+         }
+ 
+     } catch (err) {
+         console.error("❌ Error verifying order:", err);
+         alert("Payment successful, but unable to update your premium status.");
+     }
+ });
 
+ async function showLeaderboard() {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get("http://localhost:4200/user/leaderboard", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            const leaderboardList = document.getElementById("leaderboardList");
+            leaderboardList.innerHTML = "";  // Clear existing list
+
+            response.data.forEach(user => {
+                const li = document.createElement("li");
+                li.textContent = `${user.name} - $${user.total_expenses}`;
+                leaderboardList.appendChild(li);
+            });
+
+            document.getElementById("leaderboard").style.display = "block";  // Show leaderboard section
+        } catch (err) {
+            console.error("Error fetching leaderboard:", err);
         }
-
-    } catch (err) {
-        console.error("❌ Error verifying order:", err);
-        alert("Payment successful, but unable to update your premium status.");
     }
-});
-</script>
-</body>
-</html>
+
+
+ </script>
+ </body>
+ </html>
